@@ -2,8 +2,8 @@ from aws_cdk import (
     Stack,
     aws_lambda as _lambda,  # Import the Lambda module
     aws_iam as _iam,
-aws_logs as _logs,
-    Duration
+    aws_logs as _logs,
+    Duration, RemovalPolicy
 )
 from constructs import Construct
 
@@ -27,12 +27,12 @@ class ServerlessApplicationStack(Stack):
                 resources=["arn:aws:logs:*:*:*"]
             )
         )
-        #log group for Lambda with retention of 1 day
+        #log group for Lambda with retention of 1 day and delete log group when stack deletes
         log_group = _logs.LogGroup(
-            self,
-            "Lambda Log Group",
-            log_group_name="/aws/lambda/CdkHelloWorldFunction",
-            retention=_logs.RetentionDays.ONE_DAY
+            self, "LambdaLogGroup",
+            log_group_name="CdkLambdaLogGroup",
+            retention=_logs.RetentionDays.ONE_DAY,
+            removal_policy=RemovalPolicy.DESTROY
         )
 
         # Define the Lambda function resource
@@ -41,11 +41,7 @@ class ServerlessApplicationStack(Stack):
             runtime=_lambda.Runtime.PYTHON_3_9,  # Provide any supported Node.js runtime
             handler="index.handler",
             function_name="CdkHelloWorldFunction",
-            code=_lambda.Code.from_inline("""def handler(event,context):
-            return {
-                "status" : 200
-            }"""
-                                          ),
+            code=_lambda.Code.from_asset("serverless_application/src"),
             timeout=Duration.seconds(900),  # Timeout in seconds
             memory_size=128,  # Memory in MBs
             role=lambda_role,

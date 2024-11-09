@@ -1,5 +1,5 @@
 name: Deploy CDK App
-Description: Deploy CDK App to AWS
+description: Deploy CDK App to AWS
 on:
   push:
     branches: [ GitWorkflows ]

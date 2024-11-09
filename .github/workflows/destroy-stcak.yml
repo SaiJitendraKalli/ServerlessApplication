@@ -1,5 +1,5 @@
 name: Destroy CDK App
-Description: Destroy CDK App to AWS
+description: Destroy CDK App to AWS
 
 on:
   workflow_dispatch:
@@ -28,4 +28,4 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: CDK Destroy
-        run: cdk destroy --force
+        run: cdk destroy "*" --force

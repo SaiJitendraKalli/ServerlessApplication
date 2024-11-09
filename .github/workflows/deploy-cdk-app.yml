@@ -21,6 +21,10 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install CDK
+        run: |
+          npm install -g aws-cdk
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:

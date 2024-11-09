@@ -17,19 +17,24 @@ class ServerlessApplicationStack(Stack):
             self, "LambdaRole",
             role_name="CdkLambdaRole",
             description="Role for Lambda to access services",
-            assumed_by=_iam.ServicePrincipal("lambda.amazonaws.com"),
+            #add assume role for DynamoDb and Lambda
+            assumed_by=_iam.CompositePrincipal(
+                _iam.ServicePrincipal("lambda.amazonaws.com"),
+                _iam.ServicePrincipal("dynamodb.amazonaws.com")
+            ),
             managed_policies=[
-                _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+                _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole"),
+                _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonDynamoDBFullAccess")
             ]
         )
 
         # Add permissions to the role
-        lambda_role.add_to_policy(
-            _iam.PolicyStatement(
-                actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-                resources=["arn:aws:logs:*:*:*"]
-            )
-        )
+        # lambda_role.add_to_policy(
+        #     _iam.PolicyStatement(
+        #         actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+        #         resources=["arn:aws:logs:*:*:*"]
+        #     )
+        # )
         #log group for Lambda with retention of 1 day and delete log group when stack deletes
         log_group = _logs.LogGroup(
             self, "LambdaLogGroup",
@@ -41,7 +46,7 @@ class ServerlessApplicationStack(Stack):
         # Define the Lambda function resource
         my_function = _lambda.Function(
             self, "HelloWorldFunction",
-            runtime=_lambda.Runtime.PYTHON_3_9,  # Provide any supported Node.js runtime
+            runtime=_lambda.Runtime.PYTHON_3_9,
             handler="index.handler",
             function_name="CdkHelloWorldFunction",
             code=_lambda.Code.from_asset("serverless_application/src"),

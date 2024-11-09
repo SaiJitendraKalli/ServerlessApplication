@@ -1,1 +1,14 @@
+name: main
 
+on: workflow_dispatch
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run
+        run: |
+          echo "Hello, world!"
+          echo "This is a test action."

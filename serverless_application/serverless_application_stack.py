@@ -17,7 +17,10 @@ class ServerlessApplicationStack(Stack):
             self, "LambdaRole",
             role_name="CdkLambdaRole",
             description="Role for Lambda to access services",
-            assumed_by=_iam.ServicePrincipal("lambda.amazonaws.com")
+            assumed_by=_iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[
+                _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+            ]
         )
 
         # Add permissions to the role

@@ -90,6 +90,9 @@ class ServerlessApplicationStack(Stack):
                 logging_level=_apigw.MethodLoggingLevel.INFO,
                 data_trace_enabled=False,
                 metrics_enabled=False,
+                variables={
+                    'removeTestInvokeStage': 'true'
+                }
             ),
             cloud_watch_role=True,
             default_cors_preflight_options=_apigw.CorsOptions(
@@ -99,7 +102,8 @@ class ServerlessApplicationStack(Stack):
             )
         )
         users=apigw.root.add_resource("users")
-        user=users.add_resource("{user_id}")
+        user=apigw.root.add_resource("user")
+        user_id=user.add_resource("{user_id}")
         apigw.node.add_dependency(dynamo_db_table, lambda_function)
 
         lambda_integration = _apigw.LambdaIntegration(
@@ -107,7 +111,8 @@ class ServerlessApplicationStack(Stack):
             request_templates={"application/json": '{ "statusCode": "200" }'}
         )
         users.add_method("GET", lambda_integration)
-        user.add_method("GET", lambda_integration)
+        user_id.add_method("GET", lambda_integration)
+        user.add_method("POST", lambda_integration)
 
         deployment = _apigw.Deployment(
             self, "CdkApiGwDeployment",

@@ -58,10 +58,10 @@ def get_records(dynamodb_table):
 def put_record(dynamodb_table, item):
     try:
         logger.info(f"Putting record into table: {dynamodb_table.table_name}")
-        logger.debug(f"Item to put: {json.dumps(item, default=str)}")
+        logger.info(f"Item to put: {json.dumps(item, default=str)}")
         response = dynamodb_table.put_item(Item=item)
         logger.info("Successfully put record")
-        return response
+        return json.dumps(response)
     except Exception as e:
         logger.error(f"Error putting record: {str(e)}")
         raise
@@ -162,17 +162,26 @@ def handler(event, context):
                 'statusCode': 200,
                 'body': get_records(dynamodb_table)
             }
-        elif event['resource'] == '/users/{user_id}':
+        elif event['resource'] == '/user/{user_id}':
             return {
                 'statusCode': 200,
                 'body': get_record(dynamodb_table, {'id': event['pathParameters']['user_id']})
+            }
+    if event['httpMethod'] == 'POST':
+        if event['resource'] == '/user':
+            return {
+                'statusCode': 200,
+                'body': put_record(dynamodb_table, json.loads(event['body']))
             }
 
 
 
 if __name__ == '__main__':
     os.environ['TABLE_NAME'] = 'SampleTable'
-    # handler({},{})
+    event={
+        'httpMethod': 'POST', 'resource': '/user', 'body': {'id': '10', 'name': 'Jnana Sai Jitendra Reddy Kalli'}
+    }
+    handler(event,{})
     response = put_record(get_dynamodb_resource(os.environ['TABLE_NAME']),
                           {'id': '1945', 'name': 'Jnana Sai Jitendra Reddy Kalli'})
     # print(response)

@@ -3,7 +3,7 @@ description: Deploy CDK App to AWS
 on:
   push:
     branches: [ GitWorkflows ]
-  pull_request:
+  pull_request_review:
     branches: [ main ]
   workflow_dispatch:
 
@@ -43,9 +43,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Build
-        run: |
-          cdk synth
+#      - name: Build
+#        run: |
+#          cdk synth
 
       - name: CDK Deploy
         run: cdk deploy --all --require-approval never

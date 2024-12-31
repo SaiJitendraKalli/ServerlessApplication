@@ -69,7 +69,7 @@ class ServerlessApplicationStack(Stack):
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="main.handler",
             function_name=f"{construct_id}-lambda",
-            description=f"Lambda function for {ServerlessApplicationStack.stack_name}",
+            description=f"Lambda function for {construct_id}",
             code=_lambda.Code.from_asset("serverless_application/src"),
             timeout=Duration.seconds(900),  # Timeout in seconds
             memory_size=128,  # Memory in MBs

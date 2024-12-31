@@ -2,7 +2,8 @@ name: Deploy CDK App
 description: Deploy CDK App to AWS
 on:
   push:
-    branches: [ GitWorkflows ]
+    branches-ignore:
+      - main
   pull_request_review:
     branches: [ main ]
   workflow_dispatch:

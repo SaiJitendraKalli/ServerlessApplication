@@ -1,0 +1,42 @@
+{
+  "requests": [
+    {
+      "resource": "/users",
+      "path": "/",
+      "httpMethod": "GET",
+      "requestContext": {
+        "resourcePath": "/",
+        "httpMethod": "GET",
+        "path": "/Prod/"
+      }
+    },
+    {
+      "resource": "/users",
+      "path": "/",
+      "httpMethod": "GET",
+      "requestContext": {
+        "resourcePath": "/",
+        "httpMethod": "GET",
+        "path": "/Prod/"
+      }
+    },
+    {
+      "resource": "/user",
+      "path": "/user",
+      "httpMethod": "POST",
+      "body": "{\"id\":\"1\",\"name\":\"Sai Jitendra\",\"age\":\"24\"}"
+    },
+    {
+      "resource": "/user",
+      "path": "/user",
+      "httpMethod": "POST",
+      "body": "{\"id\":\"2\",\"name\":\"Sai Jitendra\",\"age\":\"24\"}"
+    },
+    {
+      "resource": "/user",
+      "path": "/user",
+      "httpMethod": "POST",
+      "body": "{\"id\":\"3\",\"name\":\"Sai Jitendra\",\"age\":\"24\"}"
+    }
+  ]
+}

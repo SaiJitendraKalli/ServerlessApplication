@@ -1,0 +1,10 @@
+{
+  "resource": "/users",
+  "path": "/",
+  "httpMethod": "GET",
+  "requestContext": {
+    "resourcePath": "/",
+    "httpMethod": "GET",
+    "path": "/Prod/"
+  }
+}

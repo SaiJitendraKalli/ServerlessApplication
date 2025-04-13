@@ -1,0 +1,6 @@
+{
+  "resource": "/user",
+  "path": "/user",
+  "httpMethod": "POST",
+  "body": "{\"id\":\"1945\",\"name\":\"Sai Jitendra\",\"age\":\"24\"}"
+}

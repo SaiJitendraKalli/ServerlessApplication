@@ -1,11 +1,13 @@
 from aws_cdk import (
     Stack,
     CfnOutput,
-    aws_lambda as _lambda,  # Import the Lambda module
+    aws_lambda as _lambda,
     aws_iam as _iam,
     aws_logs as _logs,
     aws_apigateway as _apigw,
     aws_dynamodb as _dynamodb,
+    aws_stepfunctions as _stepfunctions,
+    aws_stepfunctions_tasks as _stepfunctions_tasks,
     Duration, RemovalPolicy
 )
 from constructs import Construct
@@ -16,8 +18,21 @@ class ServerlessApplicationStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        dynamo_db_table = _dynamodb.Table(
-            self, "CdkDynamoDbTable",
+        # Create resources
+        dynamo_db_table = self.create_dynamodb_table()
+        lambda_role = self.create_lambda_role(dynamo_db_table)
+        log_group = self.create_log_group(construct_id)
+        lambda_function = self.create_lambda_function(construct_id, lambda_role, dynamo_db_table, log_group)
+        apigw = self.create_api_gateway(construct_id, lambda_function)
+
+        stepfunction = self.create_step_function(lambda_function)
+
+        # Outputs
+        self.create_outputs(lambda_function, lambda_role, log_group, dynamo_db_table, apigw, stepfunction)
+
+    def create_dynamodb_table(self):
+        return _dynamodb.Table(
+            self, "DynamoDbTable",
             table_name="SampleTable",
             partition_key=_dynamodb.Attribute(
                 name="id",
@@ -27,11 +42,11 @@ class ServerlessApplicationStack(Stack):
             removal_policy=RemovalPolicy.DESTROY
         )
 
+    def create_lambda_role(self, dynamo_db_table):
         lambda_role = _iam.Role(
             self, "LambdaRole",
-            role_name=f"{construct_id}-lambda-role",
+            role_name="ServerlessApplication-lambda-role",
             description="Role for Lambda to access services",
-            # add assume role for DynamoDb and Lambda
             assumed_by=_iam.CompositePrincipal(
                 _iam.ServicePrincipal("lambda.amazonaws.com"),
                 _iam.ServicePrincipal("dynamodb.amazonaws.com")
@@ -48,31 +63,43 @@ class ServerlessApplicationStack(Stack):
                 resources=[dynamo_db_table.table_arn]
             )
         )
-        # Add permissions to the role
-        # lambda_role.add_to_policy(
-        #     _iam.PolicyStatement(
-        #         actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-        #         resources=["arn:aws:logs:*:*:*"]
-        #     )
-        # )
-        # log group for Lambda with retention of 1 day and delete log group when stack deletes
-        log_group = _logs.LogGroup(
+        return lambda_role
+
+    def create_step_function_role(self, lambda_function):
+        step_function_role = _iam.Role(
+            self, "StepFunctionRole",
+            role_name="ServerlessApplication-stepfunction-role",
+            description="Role for Step Function to invoke specific Lambda function",
+            assumed_by=_iam.ServicePrincipal("states.amazonaws.com")
+        )
+
+        step_function_role.add_to_policy(
+            _iam.PolicyStatement(
+                actions=["lambda:InvokeFunction"],
+                resources=[lambda_function.function_arn]
+            )
+        )
+
+        return step_function_role
+
+    def create_log_group(self, construct_id):
+        return _logs.LogGroup(
             self, "LambdaLogGroup",
             log_group_name=f"{construct_id}-log-group",
             retention=_logs.RetentionDays.ONE_DAY,
             removal_policy=RemovalPolicy.DESTROY
         )
 
-        # Define the Lambda function resource
-        lambda_function = _lambda.Function(
-            self, "CdkLambdaFunction",
+    def create_lambda_function(self, construct_id, lambda_role, dynamo_db_table, log_group):
+        return _lambda.Function(
+            self, "LambdaFunction",
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="main.handler",
             function_name=f"{construct_id}-lambda",
             description=f"Lambda function for {construct_id}",
             code=_lambda.Code.from_asset("serverless_application/src"),
-            timeout=Duration.seconds(900),  # Timeout in seconds
-            memory_size=128,  # Memory in MBs
+            timeout=Duration.seconds(900),
+            memory_size=128,
             role=lambda_role,
             environment={
                 "TABLE_NAME": dynamo_db_table.table_name
@@ -80,8 +107,9 @@ class ServerlessApplicationStack(Stack):
             log_group=log_group
         )
 
+    def create_api_gateway(self, construct_id, lambda_function):
         apigw = _apigw.RestApi(
-            self, "CdkApiGw",
+            self, "ApiGw",
             rest_api_name=f"{construct_id}-api",
             description="API Gateway for Serverless Application",
             deploy_options=_apigw.StageOptions(
@@ -101,10 +129,9 @@ class ServerlessApplicationStack(Stack):
                 allow_headers=["*"]
             )
         )
-        users=apigw.root.add_resource("users")
-        user=apigw.root.add_resource("user")
-        user_id=user.add_resource("{user_id}")
-        apigw.node.add_dependency(dynamo_db_table, lambda_function)
+        users = apigw.root.add_resource("users")
+        user = apigw.root.add_resource("user")
+        user_id = user.add_resource("{user_id}")
 
         lambda_integration = _apigw.LambdaIntegration(
             lambda_function,
@@ -114,14 +141,36 @@ class ServerlessApplicationStack(Stack):
         user_id.add_method("GET", lambda_integration)
         user.add_method("POST", lambda_integration)
 
-        deployment = _apigw.Deployment(
-            self, "CdkApiGwDeployment",
-            api=apigw,
-            description="Deployment for Serverless Application",
-            retain_deployments=False
+        apigw.node.add_dependency(lambda_function)
+        return apigw
+
+    def create_step_function(self, lambda_function):
+        # Step Function definition
+        sfn_role = self.create_step_function_role(lambda_function)
+        tasks = _stepfunctions.Map(
+            self, "ParallelProcessRequests",
+            items_path="$.requests",
+            result_path="$.results",
+            max_concurrency=100
+        ).iterator(
+            _stepfunctions_tasks.LambdaInvoke(
+                self, "ProcessRequest",
+                lambda_function=lambda_function,
+                result_path="$.result",
+                output_path="$.result",
+            )
+        )
+        step_function = _stepfunctions.StateMachine(
+            self, "StepFunction",
+            state_machine_name="ServerlessApplicationStepFunction",
+            definition=tasks,
+            role=sfn_role,
+            timeout=Duration.minutes(5)
         )
 
+        return step_function
 
+    def create_outputs(self, lambda_function, lambda_role, log_group, dynamo_db_table, apigw, stepfunction):
         CfnOutput(self, "LambdaFunctionName", value=lambda_function.function_name)
         CfnOutput(self, "LambdaFunctionArn", value=lambda_function.function_arn)
         CfnOutput(self, "LambdaFunctionRoleArn", value=lambda_role.role_arn)

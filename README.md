@@ -1,58 +1,103 @@
+# Serverless Application
 
-# Welcome to your CDK Python project!
+## Overview
+This is a serverless application built using [AWS Lambda](https://aws.amazon.com/lambda/), [API Gateway](https://aws.amazon.com/api-gateway/), [DynamoDB](https://aws.amazon.com/dynamodb/), and [AWS Step Functions](https://aws.amazon.com/step-functions/). It provides a scalable and cost-effective solution for handling backend logic, data storage, and workflow orchestration.
 
-This is a blank project for CDK development with Python.
+## Features
+- Serverless architecture
+- RESTful API endpoints
+- DynamoDB integration for data persistence
+- Step Function for workflow orchestration
+- Easy deployment with AWS CDK
+- Unit testing support
+- Environment-based logging configuration
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Prerequisites
+- [Node.js](https://nodejs.org/) (v20 or later)
+- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
+- [AWS CDK](https://aws.amazon.com/cdk/) installed globally
 
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
+## Setup Instructions
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/serverless-application.git
+   cd serverless-application
+   ```
 
-To manually create a virtualenv on MacOS and Linux:
+2. Install dependencies:
+   ```bash
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
 
+3. Bootstrap your AWS environment for CDK:
+   ```bash
+   cdk bootstrap
+   ```
+
+## Deployment
+1. Deploy the application using AWS CDK:
+   ```bash
+   cdk deploy --all
+   ```
+
+2. Note the API Gateway endpoint URL and Step Function ARN from the deployment output.
+
+## Usage
+- Use tools like [Postman](https://www.postman.com/) or `curl` to interact with the API.
+- Example request:
+  ```bash
+  curl -X POST https://your-api-endpoint/user -d '{"id": "1", "name": "John Doe"}' -H "Content-Type: application/json"
+  ```
+
+- **Step Function**:
+  - The Step Function orchestrates multiple requests in parallel.
+  - Example input for the Step Function:
+    ```json
+    {
+      "requests": [
+        {
+          "resource": "/users",
+          "httpMethod": "GET"
+        },
+        {
+          "resource": "/user",
+          "httpMethod": "POST",
+          "body": "{\"id\":\"1\",\"name\":\"John Doe\"}"
+        }
+      ]
+    }
+    ```
+
+## Project Structure
 ```
-$ python3 -m venv .venv
+/serverless_application
+  /src
+    /events       # Example event payloads for testing
+    main.py       # Lambda function entry point
+  /tests
+    /unit         # Unit tests
+  app.py          # CDK app entry point
+  serverless_application_stack.py # CDK stack definition
 ```
 
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
+### Key Files
+- **`app.py`**: Entry point for the AWS CDK application.
+- **`serverless_application_stack.py`**: Defines the infrastructure, including Lambda, API Gateway, DynamoDB, and Step Functions.
+- **`/src/main.py`**: Contains the Lambda function logic.
+- **`/src/events`**: Example event payloads for testing the application.
+- **`/tests/unit`**: Unit tests for the application.
 
-```
-$ source .venv/bin/activate
-```
+## Testing
+1. Run unit tests:
+   ```bash
+   pytest tests/unit
+   ```
 
-If you are a Windows platform, you would activate the virtualenv like this:
+## CI/CD
+- The project includes GitHub Actions workflows for continuous integration and deployment.
+- Workflows :
 
-```
-% .venv\Scripts\activate.bat
-```
-
-Once the virtualenv is activated, you can install the required dependencies.
-
-```
-$ pip install -r requirements.txt
-```
-
-At this point you can now synthesize the CloudFormation template for this code.
-
-```
-$ cdk synth
-```
-
-To add additional dependencies, for example other CDK libraries, just add
-them to your `setup.py` file and rerun the `pip install -r requirements.txt`
-command.
-
-## Useful commands
-
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
-
-Enjoy!
+[![Deploy CDK App](https://github.com/SaiJitendraKalli/ServerlessApplication/actions/workflows/deploy-cdk-app.yml/badge.svg?event=workflow_dispatch)](https://github.com/SaiJitendraKalli/ServerlessApplication/actions/workflows/deploy-cdk-app.yml)   
+## License
+This project is licensed under the MIT License.
